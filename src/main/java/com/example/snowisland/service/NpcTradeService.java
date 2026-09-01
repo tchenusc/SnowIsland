@@ -790,12 +790,12 @@ public class NpcTradeService {
     /**
      * 根据itemId推断itemType
      * 根据系统已知的物品分类：
-     * - item类: 1-医疗包, 2-手电筒, 4-哨子, 8-维修工具包, 10-朗姆酒, 12-渔网, 15-点火工具, 18-食物补给
+     * - item类: 1-医疗资源, 2-手电筒, 4-哨子, 8-维修工具包, 10-朗姆酒, 12-渔网, 15-点火工具, 18-食物补给
      * - material类: 1-金属制品, 2-木材, 3-绳索, 4-木板, 5-食物, 6-沥青, 7-石料, 8-燃料, 9-帆布, 10-发动机, 11-螺旋桨, 12-发电机
      */
     private TradeItem.ItemType inferItemTypeById(Integer itemId) {
         Map<Integer, TradeItem.ItemType> itemTypeMap = new HashMap<>();
-        itemTypeMap.put(1, TradeItem.ItemType.item);  // 医疗包
+        itemTypeMap.put(1, TradeItem.ItemType.item);  // 医疗资源
         itemTypeMap.put(2, TradeItem.ItemType.item);  // 手电筒
         itemTypeMap.put(4, TradeItem.ItemType.item);  // 哨子
         itemTypeMap.put(8, TradeItem.ItemType.item);  // 维修工具包
@@ -995,7 +995,7 @@ public class NpcTradeService {
 
     private String getItemNameById(Integer itemId) {
         Map<Integer, String> names = new HashMap<>();
-        names.put(1, "医疗包");
+        names.put(1, "医疗资源");
         names.put(2, "手电筒");
         names.put(4, "哨子");
         names.put(8, "维修工具包");

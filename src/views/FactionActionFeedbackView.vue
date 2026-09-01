@@ -118,6 +118,32 @@ function formatPayload(payload) {
     .join('\n')
 }
 
+function isNpcAssignPersonnel(action) {
+  return action?.actionType === 'assign_personnel' && action?.payload?.targetKind === 'npc'
+}
+
+function npcAutoVerdictBadge(action) {
+  const r = action?.result || ''
+  if (r.includes('已全部自动执行')) {
+    return { text: '已自动结算', cls: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' }
+  }
+  if (r.includes('部分自动执行，其余待主持人裁定')) {
+    return { text: '部分自动·待裁定', cls: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' }
+  }
+  if (r.includes('结论：NPC拒绝执行')) {
+    return { text: 'NPC拒绝', cls: 'bg-red-500/20 text-red-400 border-red-500/30' }
+  }
+  if (r.includes('结论：无法执行')) {
+    return { text: '无法执行', cls: 'bg-gray-500/20 text-gray-400 border-gray-500/30' }
+  }
+  return null
+}
+
+function shouldShowRawPayload(action) {
+  if (action?.actionType === 'assign_personnel' && action?.result) return false
+  return !!(action?.payload && Object.keys(action.payload).length)
+}
+
 onMounted(async () => {
   await loadGameState()
   filterGameDay.value = String(currentGameDay.value || 1)
@@ -205,6 +231,15 @@ onMounted(async () => {
               {{ FACTION_LABELS[action.faction]?.label || action.faction }}
             </span>
             <span class="text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-300">{{ action.actionTypeLabel }}</span>
+            <span
+              v-if="isNpcAssignPersonnel(action)"
+              class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30"
+            >NPC行动</span>
+            <span
+              v-if="npcAutoVerdictBadge(action)"
+              class="text-xs px-2 py-0.5 rounded-full border"
+              :class="npcAutoVerdictBadge(action).cls"
+            >{{ npcAutoVerdictBadge(action).text }}</span>
             <span class="text-gray-600 text-xs">第{{ action.gameDay }}天</span>
             <span
               class="ml-auto text-xs px-2 py-0.5 rounded-full"
@@ -218,7 +253,7 @@ onMounted(async () => {
             </span>
           </div>
 
-          <pre v-if="action.payload && Object.keys(action.payload).length" class="text-gray-500 text-xs mb-2 whitespace-pre-wrap font-sans">输入详情：
+          <pre v-if="shouldShowRawPayload(action)" class="text-gray-500 text-xs mb-2 whitespace-pre-wrap font-sans">输入详情：
 {{ formatPayload(action.payload) }}</pre>
 
           <div v-if="action.result" class="text-gray-300 text-sm whitespace-pre-wrap bg-black/20 rounded-xl p-4 mb-3 border border-white/5">

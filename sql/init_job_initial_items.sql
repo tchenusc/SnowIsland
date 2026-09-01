@@ -60,7 +60,7 @@ INSERT INTO `job_initial_items` (`job_id`, `item_type`, `item_id`, `quantity`, `
 INSERT INTO `job_initial_items` (`job_id`, `item_type`, `item_id`, `quantity`, `unit`) VALUES
 (4, 'item', 5, 1, '件');    -- 防弹衣
 
--- 5. 治安官（射击）：手铐1，警棍1，防弹衣1，手电筒1，食物2kg，燃料5kg，木材45kg，手枪（2发），医疗包1，绳索10米，朗姆酒5瓶
+-- 5. 治安官（射击）：手铐1，警棍1，防弹衣1，手电筒1，食物2kg，燃料5kg，木材45kg，手枪（2发），医疗资源10份，绳索10米，朗姆酒5瓶
 INSERT INTO `job_initial_items` (`job_id`, `item_type`, `item_id`, `quantity`, `unit`) VALUES
 (5, 'item', 3, 1, '个'),    -- 手铐
 (5, 'weapon', 3, 1, '个'),  -- 警棍
@@ -71,11 +71,11 @@ INSERT INTO `job_initial_items` (`job_id`, `item_type`, `item_id`, `quantity`, `
 (5, 'material', 2, 45, 'kg'), -- 木材
 (5, 'weapon', 1, 1, '把'),  -- 制式手枪
 (5, 'ammo', 1, 2, '枚'),    -- 手枪弹
-(5, 'item', 1, 1, '个'),    -- 医疗包
+(5, 'item', 1, 10, '份'),   -- 医疗资源
 (5, 'material', 3, 10, '米'), -- 绳索
 (5, 'item', 10, 5, '瓶');   -- 朗姆酒
 
--- 6. 民兵（格斗）：复合盾1，警棍1，食物2kg，燃料5kg，木材45kg，手枪（2发），医疗包1，绳索10米，朗姆酒5瓶
+-- 6. 民兵（格斗）：复合盾1，警棍1，食物2kg，燃料5kg，木材45kg，手枪（2发），医疗资源10份，绳索10米，朗姆酒5瓶
 INSERT INTO `job_initial_items` (`job_id`, `item_type`, `item_id`, `quantity`, `unit`) VALUES
 (6, 'item', 6, 1, '个'),    -- 复合盾
 (6, 'weapon', 3, 1, '个'),  -- 警棍
@@ -84,11 +84,11 @@ INSERT INTO `job_initial_items` (`job_id`, `item_type`, `item_id`, `quantity`, `
 (6, 'material', 2, 45, 'kg'), -- 木材
 (6, 'weapon', 1, 1, '把'),  -- 制式手枪
 (6, 'ammo', 1, 2, '枚'),    -- 手枪弹
-(6, 'item', 1, 1, '个'),    -- 医疗包
+(6, 'item', 1, 10, '份'),   -- 医疗资源
 (6, 'material', 3, 10, '米'), -- 绳索
 (6, 'item', 10, 5, '瓶');   -- 朗姆酒
 
--- 7. 巡夜人（格斗，巡逻）:哨子1，手电筒2，复合盾1，蜡烛10根，食物2kg，燃料5kg，木材45kg，手枪（2发），医疗包1，绳索10米，朗姆酒5瓶
+-- 7. 巡夜人（格斗，巡逻）:哨子1，手电筒2，复合盾1，蜡烛10根，食物2kg，燃料5kg，木材45kg，手枪（2发），医疗资源10份，绳索10米，朗姆酒5瓶
 INSERT INTO `job_initial_items` (`job_id`, `item_type`, `item_id`, `quantity`, `unit`) VALUES
 (7, 'item', 4, 1, '个'),    -- 哨子
 (7, 'item', 2, 2, '个'),    -- 手电筒
@@ -99,7 +99,7 @@ INSERT INTO `job_initial_items` (`job_id`, `item_type`, `item_id`, `quantity`, `
 (7, 'material', 2, 45, 'kg'), -- 木材
 (7, 'weapon', 1, 1, '把'),  -- 制式手枪
 (7, 'ammo', 1, 2, '枚'),    -- 手枪弹
-(7, 'item', 1, 1, '个'),    -- 医疗包
+(7, 'item', 1, 10, '份'),   -- 医疗资源
 (7, 'material', 3, 10, '米'), -- 绳索
 (7, 'item', 10, 5, '瓶');   -- 朗姆酒
 
@@ -217,9 +217,9 @@ INSERT INTO `job_initial_items` (`job_id`, `item_type`, `item_id`, `quantity`, `
 (19, 'material', 2, 50, 'kg'), -- 木材
 (19, 'material', 1, 10, 'kg'); -- 金属制品
 
--- 20. 赤脚医生（医疗，急救）:医疗包2个，手术刀1套，绳索10米，食物3kg，燃料5kg，木材50kg，金属制品10kg
+-- 20. 赤脚医生（医疗，急救）:医疗资源20份，手术刀1套，绳索10米，食物3kg，燃料5kg，木材50kg，金属制品10kg
 INSERT INTO `job_initial_items` (`job_id`, `item_type`, `item_id`, `quantity`, `unit`) VALUES
-(20, 'item', 1, 2, '个'),    -- 医疗包
+(20, 'item', 1, 20, '份'),   -- 医疗资源
 (20, 'weapon', 11, 1, '把'), -- 手术刀
 (20, 'material', 3, 10, '米'), -- 绳索
 (20, 'material', 5, 3, 'kg'), -- 食物

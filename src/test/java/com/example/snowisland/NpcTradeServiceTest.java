@@ -725,7 +725,7 @@ public class NpcTradeServiceTest {
 
         Map<String, Object> config = npcTradeService.getTradeConfig(testNpcId, TEST_PLAYER_ID);
         assertTrue((Boolean) config.get("success"));
-        assertEquals(4, stock, "医疗包库存应仍为4");
+        assertEquals(4, stock, "医疗资源库存应仍为4");
     }
 
     @Test
@@ -878,7 +878,7 @@ public class NpcTradeServiceTest {
         assertEquals(1, items.size());
         assertEquals("item", items.get(0).get("itemType"));
         assertEquals(1, items.get(0).get("itemId"));
-        assertEquals("医疗包", items.get(0).get("itemName"));
+        assertEquals("医疗资源", items.get(0).get("itemName"));
         assertEquals(4, items.get(0).get("quantity"));
     }
 

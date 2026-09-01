@@ -115,6 +115,7 @@ watch([showArkTab, showShelterTab, showMilestoneTab, showCatastropheTab, showFac
 })
 
 let pollTimer = null
+let playerInfoRefreshGen = 0
 
 async function refreshLoreUnread() {
   try {
@@ -142,9 +143,13 @@ const fetchPendingTradesCount = async () => {
   }
 }
 
-const fetchPlayerInfo = async () => {
-  loading.value = true
-  error.value = null
+const fetchPlayerInfo = async (options) => {
+  const silent = options && options.silent === true
+  if (!silent) {
+    loading.value = true
+    error.value = null
+  }
+  const gen = ++playerInfoRefreshGen
   try {
     const [infoResult, itemsResult, resourcesResult, stateResult] = await Promise.all([
       playerAPI.getDetails(playerId),
@@ -152,16 +157,21 @@ const fetchPlayerInfo = async () => {
       playerAPI.getResources(playerId),
       gameStateAPI.get().catch(() => null)
     ])
+
+    // Silent polls: drop stale responses if a newer refresh has already started
+    if (silent && gen !== playerInfoRefreshGen) {
+      return
+    }
     
     if (infoResult && infoResult.success) {
       playerInfo.value = infoResult
-    } else {
+    } else if (!silent) {
       error.value = infoResult?.message || '获取玩家信息失败'
     }
     
     if (itemsResult && Array.isArray(itemsResult)) {
       playerItems.value = itemsResult
-    } else {
+    } else if (!silent) {
       console.log('获取玩家物品失败:', itemsResult?.message)
       playerItems.value = null
     }
@@ -175,16 +185,22 @@ const fetchPlayerInfo = async () => {
 
     if (resourcesResult && resourcesResult.success) {
       personalResources.value = resourcesResult
-    } else {
+    } else if (!silent) {
       personalResources.value = null
     }
 
-    await fetchConsumption()
+    if (!silent) {
+      await fetchConsumption()
+    }
   } catch (err) {
-    error.value = '网络请求失败，请稍后重试'
+    if (!silent) {
+      error.value = '网络请求失败，请稍后重试'
+    }
     console.error('Failed to fetch player info:', err)
   } finally {
-    loading.value = false
+    if (!silent) {
+      loading.value = false
+    }
   }
 }
 
@@ -209,7 +225,7 @@ const startPolling = () => {
   pollTimer = setInterval(() => {
     fetchPendingTradesCount()
     refreshLoreUnread()
-    fetchGameState()
+    fetchPlayerInfo({ silent: true })
   }, 5000)
 }
 

@@ -367,7 +367,7 @@ public class GameResetService {
 
         try {
             executeNativeDelete("shelter_stock");
-            entityManager.createNativeQuery("INSERT INTO shelter_stock (item_type, item_id, quantity) VALUES ('material', 1, 500), ('material', 2, 200), ('material', 3, 100), ('material', 4, 50), ('item', 1, 5), ('item', 2, 10), ('material', 5, 200)").executeUpdate();
+            entityManager.createNativeQuery("INSERT INTO shelter_stock (item_type, item_id, quantity) VALUES ('material', 1, 500), ('material', 2, 200), ('material', 3, 100), ('material', 4, 50), ('item', 1, 50), ('item', 2, 10), ('material', 5, 200)").executeUpdate();
             deletedCounts.put("初始化避难所库存", "完成");
         } catch (Exception e) {
             logger.warn("初始化避难所库存失败: {}", e.getMessage());

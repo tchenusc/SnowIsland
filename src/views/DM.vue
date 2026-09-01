@@ -196,22 +196,74 @@ function normalizePlayer(raw) {
     hiddenJobId: raw.hiddenJobId ?? raw.hidden_job_id ?? null,
     hiddenJobName: raw.hiddenJobName ?? raw.hidden_job_name ?? '',
     tradeBanned: Boolean(raw.tradeBanned ?? raw.trade_banned),
+    tradeBanExempt: Boolean(raw.tradeBanExempt ?? raw.trade_ban_exempt),
     isBound: Boolean(raw.isBound ?? raw.is_bound),
     tradeBanReasons: Array.isArray(raw.tradeBanReasons) ? raw.tradeBanReasons : [],
     tradeBanActive: Boolean(raw.tradeBanActive)
   }
 }
 
-/** 阵营专属特性 + 平民特性（全员可选）；外来者/原住民与平民相同 */
-const CIVILIAN_LIKE_FACTIONS = new Set(['平民', '外来者', '原住民'])
+/** 无阵营/平民特性全员可选；阵营专属特性仅当玩家阵营完全匹配时可选（含外来者、原住民） */
 const skillsForFaction = (faction) => {
   return skills.value.filter((s) => {
     const f = s.faction
     if (!f || f === '平民') return true
-    if (CIVILIAN_LIKE_FACTIONS.has(faction)) return false
-    return faction ? f === faction : true
+    return Boolean(faction) && f === faction
   })
 }
+
+const editJobSearch = ref('')
+const editSkillSearch = ref('')
+const createJobSearch = ref('')
+const createSkillSearch = ref('')
+
+function normalizePickerQuery(query) {
+  return String(query || '').trim().toLowerCase()
+}
+
+function optionMatchesSearch(item, query, extraKeys = []) {
+  const q = normalizePickerQuery(query)
+  if (!q) return true
+  if (String(item?.name || '').toLowerCase().includes(q)) return true
+  return extraKeys.some((key) => String(item?.[key] || '').toLowerCase().includes(q))
+}
+
+function filterPickerOptions(list, query, selectedId, extraKeys = []) {
+  const q = normalizePickerQuery(query)
+  if (!q) return list
+  return list.filter((item) => {
+    if (selectedId !== '' && selectedId != null && item.id == selectedId) return true
+    return optionMatchesSearch(item, query, extraKeys)
+  })
+}
+
+function pickerVisibleSize(query, optionCount) {
+  if (!normalizePickerQuery(query)) return 1
+  return Math.min(8, Math.max(2, optionCount + 1))
+}
+
+const filteredEditJobs = computed(() =>
+  filterPickerOptions(jobs.value, editJobSearch.value, editingPlayer.value?.jobId)
+)
+const filteredEditSkills = computed(() =>
+  filterPickerOptions(
+    skillsForFaction(editingPlayer.value?.faction),
+    editSkillSearch.value,
+    editingPlayer.value?.skillId,
+    ['function']
+  )
+)
+const filteredCreateJobs = computed(() =>
+  filterPickerOptions(jobs.value, createJobSearch.value, createForm.jobId)
+)
+const filteredCreateSkills = computed(() =>
+  filterPickerOptions(
+    skillsForFaction(createForm.faction),
+    createSkillSearch.value,
+    createForm.skillId,
+    ['function']
+  )
+)
 
 function togglePasswordVisible(id) {
   const next = new Set(showPasswordIds.value)
@@ -248,13 +300,30 @@ const getFactionColor = (faction) => {
   return colors[faction] || colors['平民']
 }
 
+function effectiveInjuryLevel(player) {
+  let level = Number(player?.isInjured) || 0
+  if (player?.isSeverelyInjured) level = Math.max(level, 2)
+  if (player?.isDead) level = Math.max(level, 3)
+  return level
+}
+
+function injuryFieldsFromLevel(level) {
+  const n = Number(level) || 0
+  return {
+    isInjured: n,
+    isSeverelyInjured: n >= 2,
+    isDead: n >= 3
+  }
+}
+
 const getStatusBadges = (player) => {
   const badges = []
   if (player.isWeak) badges.push({ text: '虚弱', color: 'text-amber-400 bg-amber-500/20' })
   if (player.isOverworked) badges.push({ text: '过劳', color: 'text-blue-400 bg-blue-500/20' })
-  if (player.isInjured === 3) badges.push({ text: '死亡', color: 'text-gray-400 bg-gray-600/30' })
-  else if (player.isInjured === 2) badges.push({ text: '重伤', color: 'text-red-300 bg-red-600/30' })
-  else if (player.isInjured === 1) badges.push({ text: '受伤', color: 'text-red-400 bg-red-500/20' })
+  const injury = effectiveInjuryLevel(player)
+  if (injury === 3) badges.push({ text: '死亡', color: 'text-gray-400 bg-gray-600/30' })
+  else if (injury === 2) badges.push({ text: '重伤', color: 'text-red-300 bg-red-600/30' })
+  else if (injury === 1) badges.push({ text: '受伤', color: 'text-red-400 bg-red-500/20' })
   if (player.isBound) badges.push({ text: '束缚', color: 'text-orange-300 bg-orange-600/25' })
   if (badges.length === 0) badges.push({ text: '健康', color: 'text-emerald-400 bg-emerald-500/20' })
   return badges
@@ -266,8 +335,9 @@ function autoTradeBanReasons(player) {
 
 function tradeBanHint(player) {
   const auto = autoTradeBanReasons(player)
-  if (auto.length) return `自动禁止：${auto.join('；')}（勾选为手动覆盖）`
-  return '勾选后手动禁止该玩家交易'
+  const explain = '禁止交易为手动禁止；允许交易豁免自动禁止（今日劳工/重伤/束缚）'
+  if (auto.length) return `自动禁止：${auto.join('；')}。${explain}`
+  return explain
 }
 
 async function toggleTradeBanned(player, event) {
@@ -288,6 +358,29 @@ async function toggleTradeBanned(player, event) {
     player.tradeBanned = prev
     if (event?.target) event.target.checked = prev
     alert('更新禁止交易失败: ' + (e.message || '未知错误'))
+  } finally {
+    savingPlayer.value = false
+  }
+}
+
+async function toggleTradeBanExempt(player, event) {
+  const next = Boolean(event?.target?.checked)
+  const prev = Boolean(player.tradeBanExempt)
+  player.tradeBanExempt = next
+  savingPlayer.value = true
+  try {
+    const result = await dmPlayerAPI.update(player.id, { tradeBanExempt: next })
+    if (result?.success) {
+      await loadPlayers()
+    } else {
+      player.tradeBanExempt = prev
+      if (event?.target) event.target.checked = prev
+      alert(result?.message || '更新交易豁免失败')
+    }
+  } catch (e) {
+    player.tradeBanExempt = prev
+    if (event?.target) event.target.checked = prev
+    alert('更新交易豁免失败: ' + (e.message || '未知错误'))
   } finally {
     savingPlayer.value = false
   }
@@ -451,11 +544,13 @@ function openEditModal(player) {
     loginPassword: player.loginPassword ?? '',
     isWeak: player.isWeak,
     isOverworked: player.isOverworked,
-    isInjured: player.isInjured ?? 0,
+    isInjured: effectiveInjuryLevel(player),
     isBound: Boolean(player.isBound),
     dmNotes: player.dmNotes ?? '',
     hiddenJobId: player.hiddenJobId ?? ''
   }
+  editJobSearch.value = ''
+  editSkillSearch.value = ''
   resetMarkerAddForm()
   showEditModal.value = true
 }
@@ -509,6 +604,8 @@ function openCreateModal() {
   createForm.dmNotes = ''
   createForm.hiddenJobId = ''
   createStartingItems.value = []
+  createJobSearch.value = ''
+  createSkillSearch.value = ''
   showCreateModal.value = true
 }
 
@@ -530,10 +627,8 @@ async function saveEditPlayer() {
       faction: editingPlayer.value.faction,
       isWeak: editingPlayer.value.isWeak,
       isOverworked: editingPlayer.value.isOverworked,
-      isInjured: editingPlayer.value.isInjured,
+      ...injuryFieldsFromLevel(editingPlayer.value.isInjured),
       isBound: Boolean(editingPlayer.value.isBound),
-      isSeverelyInjured: editingPlayer.value.isSeverelyInjured,
-      isDead: editingPlayer.value.isDead,
       loginUsername: editingPlayer.value.loginUsername?.trim() || undefined,
       loginPassword: editingPlayer.value.loginPassword || undefined,
       dmNotes: editingPlayer.value.dmNotes ?? '',
@@ -581,10 +676,8 @@ async function createPlayer() {
       skillId: Number(createForm.skillId),
       isWeak: createForm.isWeak,
       isOverworked: createForm.isOverworked,
-      isInjured: createForm.isInjured,
+      ...injuryFieldsFromLevel(createForm.isInjured),
       isBound: Boolean(createForm.isBound),
-      isSeverelyInjured: createForm.isSeverelyInjured,
-      isDead: createForm.isDead,
       loginUsername: createForm.loginUsername.trim(),
       loginPassword: createForm.loginPassword,
       dmNotes: createForm.dmNotes ?? '',
@@ -958,23 +1051,33 @@ onMounted(() => {
                     >✗</span>
                   </td>
                   <td class="px-4 py-4">
-                    <label
-                      class="inline-flex items-center gap-1.5 cursor-pointer"
-                      :title="tradeBanHint(player)"
-                    >
-                      <input
-                        type="checkbox"
-                        class="rounded"
-                        :checked="player.tradeBanned"
-                        :disabled="savingPlayer"
-                        @change="toggleTradeBanned(player, $event)"
-                      />
-                      <span
-                        v-if="autoTradeBanReasons(player).length"
-                        class="text-[10px] text-red-400/80 max-w-[72px] truncate"
-                        :title="autoTradeBanReasons(player).join('；')"
-                      >{{ autoTradeBanReasons(player).join('；') }}</span>
-                    </label>
+                    <div class="flex flex-col gap-1.5" :title="tradeBanHint(player)">
+                      <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          class="rounded"
+                          :checked="player.tradeBanned"
+                          :disabled="savingPlayer"
+                          @change="toggleTradeBanned(player, $event)"
+                        />
+                        <span class="text-[10px] text-gray-400 whitespace-nowrap">禁止交易</span>
+                        <span
+                          v-if="autoTradeBanReasons(player).length"
+                          class="text-[10px] text-red-400/80 max-w-[72px] truncate"
+                          :title="autoTradeBanReasons(player).join('；')"
+                        >{{ autoTradeBanReasons(player).join('；') }}</span>
+                      </label>
+                      <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          class="rounded"
+                          :checked="player.tradeBanExempt"
+                          :disabled="savingPlayer"
+                          @change="toggleTradeBanExempt(player, $event)"
+                        />
+                        <span class="text-[10px] text-gray-400 whitespace-nowrap">允许交易（豁免自动禁止）</span>
+                      </label>
+                    </div>
                   </td>
                   <td class="px-4 py-4">
                     <div class="flex gap-2">
@@ -1028,16 +1131,36 @@ onMounted(() => {
               </div>
               <div>
                 <label class="block text-gray-400 text-xs mb-1">职业</label>
-                <select v-model="editingPlayer.jobId" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
+                <input
+                  v-model="editJobSearch"
+                  type="text"
+                  placeholder="搜索职业…"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-1"
+                />
+                <select
+                  v-model="editingPlayer.jobId"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                  :size="pickerVisibleSize(editJobSearch, filteredEditJobs.length)"
+                >
                   <option value="">未分配</option>
-                  <option v-for="job in jobs" :key="job.id" :value="job.id">{{ job.name }}</option>
+                  <option v-for="job in filteredEditJobs" :key="job.id" :value="job.id">{{ job.name }}</option>
                 </select>
               </div>
               <div>
                 <label class="block text-gray-400 text-xs mb-1">特性</label>
-                <select v-model="editingPlayer.skillId" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
+                <input
+                  v-model="editSkillSearch"
+                  type="text"
+                  placeholder="搜索特性…"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-1"
+                />
+                <select
+                  v-model="editingPlayer.skillId"
+                  class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                  :size="pickerVisibleSize(editSkillSearch, filteredEditSkills.length)"
+                >
                   <option value="">未分配</option>
-                  <option v-for="sk in skillsForFaction(editingPlayer.faction)" :key="sk.id" :value="sk.id">{{ sk.name }}</option>
+                  <option v-for="sk in filteredEditSkills" :key="sk.id" :value="sk.id">{{ sk.name }}</option>
                 </select>
               </div>
               <div>
@@ -1051,7 +1174,10 @@ onMounted(() => {
               <div class="flex flex-wrap gap-4 text-sm text-gray-300">
                 <label class="flex items-center gap-2"><input v-model="editingPlayer.isWeak" type="checkbox" class="rounded" />虚弱</label>
                 <label class="flex items-center gap-2"><input v-model="editingPlayer.isOverworked" type="checkbox" class="rounded" />过劳</label>
-                <label class="flex items-center gap-2"><input v-model="editingPlayer.isBound" type="checkbox" class="rounded" />束缚</label>
+                <div class="flex flex-col gap-0.5">
+                  <label class="flex items-center gap-2"><input v-model="editingPlayer.isBound" type="checkbox" class="rounded" />束缚</label>
+                  <p class="text-[10px] text-gray-500">取消勾选将同时移除名称含「束缚」的标记</p>
+                </div>
                 <label class="flex items-center gap-2">
                   <span class="text-gray-300">身体状态</span>
                   <select v-model.number="editingPlayer.isInjured" class="bg-black/30 border border-white/10 rounded px-2 py-1 text-white text-sm">
@@ -1174,23 +1300,37 @@ onMounted(() => {
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-gray-400 text-xs mb-1">职业</label>
+                  <input
+                    v-model="createJobSearch"
+                    type="text"
+                    placeholder="搜索职业…"
+                    class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-1"
+                  />
                   <select
                     v-model="createForm.jobId"
                     class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                    :size="pickerVisibleSize(createJobSearch, filteredCreateJobs.length)"
                   >
                     <option value="" disabled>请选择职业</option>
-                    <option v-for="job in jobs" :key="job.id" :value="job.id">{{ job.name }}</option>
+                    <option v-for="job in filteredCreateJobs" :key="job.id" :value="job.id">{{ job.name }}</option>
                   </select>
                 </div>
                 <div>
                   <label class="block text-gray-400 text-xs mb-1">特性</label>
+                  <input
+                    v-model="createSkillSearch"
+                    type="text"
+                    placeholder="搜索特性…"
+                    class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-1"
+                  />
                   <select
                     v-model="createForm.skillId"
                     class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                    :size="pickerVisibleSize(createSkillSearch, filteredCreateSkills.length)"
                   >
                     <option value="" disabled>请选择特性</option>
                     <option
-                      v-for="sk in skillsForFaction(createForm.faction)"
+                      v-for="sk in filteredCreateSkills"
                       :key="sk.id"
                       :value="sk.id"
                     >

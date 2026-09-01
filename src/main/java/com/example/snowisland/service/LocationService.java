@@ -160,6 +160,7 @@ public class LocationService {
             nm.put("id", n.getId());
             nm.put("name", n.getName());
             nm.put("job", n.getJob());
+            nm.put("status", n.getStatus());
             nm.put("gender", n.getGender() != null ? n.getGender().name() : null);
             nm.put("introduction", n.getIntroduction());
             nm.put("attitudeRuler", n.getAttitudeRuler() != null ? n.getAttitudeRuler().name() : null);

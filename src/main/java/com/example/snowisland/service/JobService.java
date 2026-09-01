@@ -28,7 +28,7 @@ public class JobService {
 
     static {
         Map<Integer, String> itemNames = new HashMap<>();
-        itemNames.put(1, "医疗包");
+        itemNames.put(1, "医疗资源");
         itemNames.put(2, "手电筒");
         itemNames.put(3, "手铐");
         itemNames.put(4, "哨子");

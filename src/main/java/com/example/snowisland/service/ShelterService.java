@@ -57,7 +57,7 @@ public class ShelterService {
     private static final Object[][] DEFAULT_STOCK = {
             {ShelterStock.ItemType.material, 2, 45},
             {ShelterStock.ItemType.material, 7, 32},
-            {ShelterStock.ItemType.item, 1, 8},
+            {ShelterStock.ItemType.item, 1, 80},
             {ShelterStock.ItemType.item, 2, 4},
             {ShelterStock.ItemType.item, 3, 2},
             {ShelterStock.ItemType.item, 4, 3},

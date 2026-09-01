@@ -1,7 +1,7 @@
 -- 更新物品图鉴 remark（已有数据库执行；全新安装以 snowisland.sql 为准）
 -- 威胁值文案与 weapon.threat_level / 参考资料对齐；便当已更名为面包
 
-UPDATE `item` SET `remark` = '装有绷带、消毒剂和止血带的急救包裹。每包提供10点医疗资源，可治疗伤口或稳定重伤员。' WHERE `id` = 1;
+UPDATE `item` SET `name` = '医疗资源', `unit` = '份', `remark` = '基础医疗物资，急救重伤需5份' WHERE `id` = 1;
 UPDATE `item` SET `remark` = '金属外壳的便携照明工具，使用煤油或电池。夜间行动的基础工具。' WHERE `id` = 2;
 UPDATE `item` SET `remark` = '铁制约束器具，可将一名无反抗能力的玩家束缚。被束缚者无法进行大部分行动，直到被释放。' WHERE `id` = 3;
 UPDATE `item` SET `remark` = '铜制哨子，声音尖锐可传遍全岛。吹响后会在公屏显示哨音，可用于报警或召集同伴。' WHERE `id` = 4;

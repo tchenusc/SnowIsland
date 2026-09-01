@@ -302,7 +302,7 @@ public class NpcInventoryService {
 
     private static String propName(Integer itemId) {
         switch (itemId) {
-            case 1: return "医疗包";
+            case 1: return "医疗资源";
             case 2: return "手电筒";
             case 4: return "哨子";
             case 8: return "维修工具包";

@@ -1216,7 +1216,7 @@ public class ActionService {
 
         List<String> errors = new ArrayList<>();
         errors.addAll(transportSettlementService.validatePlanStructure(plan));
-        errors.addAll(transportSettlementService.validateKeys(action.getPlayerId(), plan));
+        // Keys are validated at submit; they may change hands before settlement, so do not re-check here.
         errors.addAll(transportSettlementService.computeTransfer(plan, action.getPlayerId()));
 
         if (!errors.isEmpty()) {

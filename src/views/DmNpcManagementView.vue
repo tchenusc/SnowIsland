@@ -1143,7 +1143,7 @@ const itemCatalog = {
     { id: 10, name: '发动机' }, { id: 11, name: '螺旋桨' }, { id: 12, name: '发电机' }
   ],
   item: [
-    { id: 1, name: '医疗包' }, { id: 2, name: '手电筒' }, { id: 4, name: '哨子' },
+    { id: 1, name: '医疗资源' }, { id: 2, name: '手电筒' }, { id: 4, name: '哨子' },
     { id: 8, name: '维修工具包' }, { id: 10, name: '朗姆酒' }, { id: 12, name: '渔网' },
     { id: 15, name: '点火工具' }
   ],

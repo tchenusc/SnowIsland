@@ -62,6 +62,9 @@ public class Player {
     @Column(name = "trade_banned")
     private Boolean tradeBanned = false;
 
+    @Column(name = "trade_ban_exempt")
+    private Boolean tradeBanExempt = false;
+
     @Column(name = "is_bound")
     private Boolean isBound = false;
 
@@ -133,6 +136,9 @@ public class Player {
 
     public Boolean getTradeBanned() { return tradeBanned; }
     public void setTradeBanned(Boolean tradeBanned) { this.tradeBanned = tradeBanned; }
+
+    public Boolean getTradeBanExempt() { return tradeBanExempt; }
+    public void setTradeBanExempt(Boolean tradeBanExempt) { this.tradeBanExempt = tradeBanExempt; }
 
     public Boolean getIsBound() { return isBound; }
     public void setIsBound(Boolean isBound) { this.isBound = isBound; }

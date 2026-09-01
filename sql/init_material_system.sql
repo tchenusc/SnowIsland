@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS player_items (
 
 -- 插入道具数据
 INSERT INTO item (name, unit, remark) VALUES
-('医疗包', '个', '恢复生命值'),
+('医疗资源', '份', '基础医疗物资，急救重伤需5份'),
 ('手电筒', '个', '提供光源'),
 ('手铐', '个', '限制行动'),
 ('哨子', '个', '发出信号'),
@@ -122,7 +122,7 @@ INSERT INTO material (name, unit, remark) VALUES
 
 -- 插入玩家物资关联数据（玩家1）
 INSERT INTO player_items (player_id, item_type, item_id, quantity) VALUES
-(1, 'item', 1, 3),  -- 医疗包 x3
+(1, 'item', 1, 30),  -- 医疗资源 x30
 (1, 'item', 2, 1),  -- 手电筒 x1
 (1, 'item', 5, 1),  -- 防弹衣 x1
 (1, 'weapon', 1, 1),  -- 制式手枪 x1

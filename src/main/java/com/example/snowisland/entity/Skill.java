@@ -13,7 +13,8 @@ public class Skill {
     @Column(name = "name", nullable = false, unique = true, length = 50)
     private String name;
 
-    @Column(name = "function", columnDefinition = "TEXT", nullable = false)
+    // Backticks required: FUNCTION is a reserved word in MySQL 8.0+
+    @Column(name = "`function`", columnDefinition = "TEXT", nullable = false)
     private String function;
 
     @Column(name = "faction", length = 20)

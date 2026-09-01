@@ -51,7 +51,7 @@ public class TradeService {
     @PostConstruct
     public void initItemData() {
         itemNames.put("item", new HashMap<>());
-        itemNames.get("item").put(1, "医疗包");
+        itemNames.get("item").put(1, "医疗资源");
         itemNames.get("item").put(2, "手电筒");
         itemNames.get("item").put(3, "手铐");
         itemNames.get("item").put(4, "哨子");
@@ -143,7 +143,7 @@ public class TradeService {
         itemNames.get("material").put(13, "草木灰");
 
         itemUnits.put("item", new HashMap<>());
-        itemUnits.get("item").put(1, "个");
+        itemUnits.get("item").put(1, "份");
         itemUnits.get("item").put(2, "个");
         itemUnits.get("item").put(3, "个");
         itemUnits.get("item").put(4, "个");

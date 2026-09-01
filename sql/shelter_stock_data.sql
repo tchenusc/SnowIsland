@@ -44,7 +44,7 @@ CREATE TABLE `shelter_stock` (
 --   item_key (旧) -> item_type + item_id (新)
 --   wood        -> material + 2    (木材)
 --   stone       -> material + 7    (石料)
---   medical_kit -> item + 1        (医疗包)
+--   medical_kit -> item + 1        (医疗资源)
 --   flashlight  -> item + 2        (手电筒)
 --   ...
 
@@ -60,7 +60,7 @@ INSERT INTO `shelter_stock` (`item_type`, `item_id`, `quantity`, `created_at`, `
 -- =====================================================
 -- 道具类 (item) - 共17种
 -- =====================================================
-('item', 1, 8, NOW(6), NOW(6)),        -- 医疗包: 8个, id=1
+('item', 1, 80, NOW(6), NOW(6)),       -- 医疗资源: 80份, id=1
 ('item', 2, 4, NOW(6), NOW(6)),        -- 手电筒: 4个, id=2
 ('item', 3, 2, NOW(6), NOW(6)),        -- 手铐: 2个, id=3
 ('item', 4, 3, NOW(6), NOW(6)),        -- 哨子: 3个, id=4

@@ -16,6 +16,8 @@ public final class NpcTradeProposalMath {
     public static final int MAX_TAKE_LINES_OPPORTUNISTIC = 2;
     public static final int MAX_MATERIAL_QTY = 5;
     public static final int MAX_ITEM_QTY = 1;
+    /** Item 1 used to be 1 kit; cap give/take at 10 resource units so 1-kit behavior stays equivalent. */
+    private static final int MEDICAL_RESOURCE_PER_OLD_KIT = 10;
     public static final String FALLBACK_REMARK = "我缺过冬的东西，用这些换。";
 
     private NpcTradeProposalMath() {
@@ -81,7 +83,7 @@ public final class NpcTradeProposalMath {
     }
 
     public static Line capGive(Line line) {
-        int cap = line.itemType == ItemType.material ? MAX_MATERIAL_QTY : MAX_ITEM_QTY;
+        int cap = itemQuantityCap(line.itemType, line.itemId);
         int qty = Math.min(line.quantity, cap);
         qty = Math.max(1, qty);
         return new Line(line.itemType, line.itemId, qty, line.name);
@@ -102,6 +104,13 @@ public final class NpcTradeProposalMath {
     }
 
     public static int materialQtyCap(int favor, ItemType itemType) {
+        return materialQtyCap(favor, itemType, 0);
+    }
+
+    public static int materialQtyCap(int favor, ItemType itemType, int itemId) {
+        if (itemType == ItemType.item && itemId == 1) {
+            return MEDICAL_RESOURCE_PER_OLD_KIT;
+        }
         if (itemType != ItemType.material) {
             return MAX_ITEM_QTY;
         }
@@ -133,7 +142,7 @@ public final class NpcTradeProposalMath {
     }
 
     /**
-     * Weapons are high value. Ammo, engines and medkits are also too good for a cold relationship.
+     * Weapons are high value. Ammo, engines and medical resources (old 1-kit stack) are also too good for a cold relationship.
      */
     public static boolean isHighValueGive(ItemType itemType, int itemId) {
         if (itemType == ItemType.weapon || itemType == ItemType.ammo) {
@@ -143,6 +152,13 @@ public final class NpcTradeProposalMath {
             return true;
         }
         return itemType == ItemType.item && itemId == 1;
+    }
+
+    private static int itemQuantityCap(ItemType itemType, int itemId) {
+        if (itemType == ItemType.item && itemId == 1) {
+            return MEDICAL_RESOURCE_PER_OLD_KIT;
+        }
+        return itemType == ItemType.material ? MAX_MATERIAL_QTY : MAX_ITEM_QTY;
     }
 
     public static boolean mayGive(ItemType itemType, int itemId, int favor) {
@@ -160,7 +176,7 @@ public final class NpcTradeProposalMath {
             return null;
         }
         int qty = Math.min(line.quantity, sellable);
-        qty = Math.min(qty, materialQtyCap(favor, line.itemType));
+        qty = Math.min(qty, materialQtyCap(favor, line.itemType, line.itemId));
         if (qty <= 0) {
             return null;
         }
@@ -216,7 +232,7 @@ public final class NpcTradeProposalMath {
         if (type == null || itemId <= 0 || !tradable) {
             return null;
         }
-        int cap = type == ItemType.material ? MAX_MATERIAL_QTY : MAX_ITEM_QTY;
+        int cap = itemQuantityCap(type, itemId);
         int qty = Math.max(1, Math.min(quantity, cap));
         return new Line(type, itemId, qty, name);
     }

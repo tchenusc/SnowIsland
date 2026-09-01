@@ -14,6 +14,7 @@ import com.example.snowisland.repository.SkillRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -21,6 +22,33 @@ import java.util.*;
 
 @Service
 public class PlayerService {
+    private static final String[] PLAYER_ID_TABLES = {
+            "player_action",
+            "player_exploration",
+            "player_stealth",
+            "player_npc_recognition",
+            "game_activity_log",
+            "clue_trigger_log",
+            "faction_action",
+            "night_action",
+            "quick_interaction",
+            "player_notebook",
+            "npc_dialogue",
+            "npc_favor_adjustment",
+            "player_marker",
+            "npc_help_record",
+            "npc_trade_proposal",
+            "npc_trade_record",
+            "lore_player_grant",
+            "npc_daily_dialogue_count",
+            "npc_daily_trade_count",
+            "npc_favor",
+            "player_daily_consumption",
+            "player_items",
+            "ark_construction_log",
+            "milestone_player_status"
+    };
+
     @Autowired
     private PlayerRepository playerRepository;
 
@@ -238,18 +266,84 @@ public class PlayerService {
     @Transactional
     public Map<String, Object> deletePlayer(Integer id) {
         Map<String, Object> result = new HashMap<>();
-        
         try {
+            if (id == null || !playerRepository.existsById(id)) {
+                result.put("success", false);
+                result.put("message", "玩家不存在");
+                return result;
+            }
+            purgePlayerDependents(id);
+            entityManager.flush();
+            entityManager.clear();
             playerRepository.deleteById(id);
             result.put("success", true);
             result.put("message", "删除成功");
-            
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             result.put("success", false);
             result.put("message", "删除失败: " + e.getMessage());
         }
-        
         return result;
+    }
+
+    private void purgePlayerDependents(Integer playerId) {
+        for (String table : PLAYER_ID_TABLES) {
+            executeScopedSql("DELETE FROM " + table + " WHERE player_id = :playerId", playerId);
+        }
+        executeScopedSql(
+                "DELETE FROM shelter_daily_labor WHERE worker_kind = 'player' AND worker_id = :playerId",
+                playerId);
+        executeScopedSql(
+                "DELETE FROM location_governance WHERE actor_kind = 'player' AND actor_id = :playerId",
+                playerId);
+        executeScopedSql(
+                "DELETE ti FROM trade_items ti INNER JOIN trade t ON ti.trade_id = t.id "
+                        + "WHERE t.from_player_id = :playerId OR t.to_player_id = :playerId",
+                playerId);
+        executeScopedSql(
+                "DELETE FROM trade WHERE from_player_id = :playerId OR to_player_id = :playerId",
+                playerId);
+        executeScopedSql(
+                "UPDATE ark_sail SET built_by_player_id = NULL WHERE built_by_player_id = :playerId",
+                playerId);
+        executeScopedSql(
+                "UPDATE ark_sail SET work_action_player_id = NULL WHERE work_action_player_id = :playerId",
+                playerId);
+        executeScopedSql(
+                "UPDATE selected_catastrophe SET player_id = NULL WHERE player_id = :playerId",
+                playerId);
+        executeScopedSql("DELETE FROM `user` WHERE player_id = :playerId", playerId);
+    }
+
+    private void executeScopedSql(String sql, Integer playerId) {
+        try {
+            entityManager.createNativeQuery(sql)
+                    .setParameter("playerId", playerId)
+                    .executeUpdate();
+        } catch (Exception e) {
+            if (isMissingTable(e)) {
+                return;
+            }
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            }
+            throw new RuntimeException(e);
+        }
+    }
+
+    private boolean isMissingTable(Throwable error) {
+        Throwable current = error;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null
+                    && (message.contains("doesn't exist")
+                    || message.contains("Unknown table")
+                    || message.contains("does not exist"))) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     @Transactional

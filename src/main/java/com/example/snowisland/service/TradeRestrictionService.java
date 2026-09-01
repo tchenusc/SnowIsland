@@ -40,15 +40,17 @@ public class TradeRestrictionService {
             return Collections.emptyList();
         }
         List<String> reasons = new ArrayList<>();
-        int day = gameStateService.getCurrentDay();
-        if (shelterService.isPlayerLaborerForDay(player.getId(), day)) {
-            reasons.add(REASON_LABORER);
-        }
-        if (PlayerStatusCatalog.isSeverelyInjuredActive(player)) {
-            reasons.add(REASON_SEVERE);
-        }
-        if (isBoundActive(player)) {
-            reasons.add(REASON_BOUND);
+        if (!Boolean.TRUE.equals(player.getTradeBanExempt())) {
+            int day = gameStateService.getCurrentDay();
+            if (shelterService.isPlayerLaborerForDay(player.getId(), day)) {
+                reasons.add(REASON_LABORER);
+            }
+            if (PlayerStatusCatalog.isSeverelyInjuredActive(player)) {
+                reasons.add(REASON_SEVERE);
+            }
+            if (isBoundActive(player)) {
+                reasons.add(REASON_BOUND);
+            }
         }
         if (Boolean.TRUE.equals(player.getTradeBanned())) {
             reasons.add(REASON_MANUAL);

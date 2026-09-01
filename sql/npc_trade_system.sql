@@ -59,8 +59,8 @@ INSERT INTO npc_trade_config (npc_id, config_type, item_type, item_id, quantity,
 (1, 'demand', 'material', 5, 10, -100, 100, 1.00),  -- 食物 10kg
 (1, 'demand', 'material', 8, 5, -100, 100, 1.00),   -- 燃料 5kg
 
--- NPC 1 的供给（提供医疗包、金属制品、木材）
-(1, 'supply', 'item', 1, 1, -100, 100, 0.80),       -- 医疗包 x1
+-- NPC 1 的供给（提供医疗资源、金属制品、木材）
+(1, 'supply', 'item', 1, 10, -100, 100, 0.80),      -- 医疗资源 x10
 (1, 'supply', 'material', 1, 5, -50, 100, 0.70),    -- 金属制品 x5
 (1, 'supply', 'material', 2, 8, -50, 100, 0.70),    -- 木材 x8
 (1, 'supply', 'item', 8, 1, 20, 100, 0.50),        -- 维修工具包 x1（需要友善以上）

@@ -673,7 +673,8 @@ public class ExplorationDataInitService {
 
     /**
      * Alias → exact catalog name, then live 图鉴, then hardcoded fallback.
-     * Unmatched if both miss. EntityManager null (unit tests) skips live lookup.
+     * 「医疗包」and「医疗资源」both resolve to item id 1; exploration_events.txt rewards
+     * already worded as 医疗资源 keep their quantities, kit-worded lines are ×10 in the file.
      */
     private CatalogHit resolveRewardName(String itemName) {
         String lookupName = REWARD_NAME_ALIASES.getOrDefault(itemName, itemName);
@@ -752,6 +753,7 @@ public class ExplorationDataInitService {
         aliases.put("灵魂摆渡·亡者回响仪式记物", "灵魂摆渡·亡者回响记物");
         aliases.put("记载物灵魂摆渡·亡者回响仪式记物", "灵魂摆渡·亡者回响记物");
         aliases.put("轻制银币", "银币");
+        aliases.put("医疗包", "医疗资源");
         aliases.put("医疗资源", "医疗包");
         return Collections.unmodifiableMap(aliases);
     }

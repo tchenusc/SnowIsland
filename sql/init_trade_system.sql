@@ -39,7 +39,7 @@ INSERT INTO trade (from_player_id, to_player_id, status, remark) VALUES
 
 -- 交易1的物品
 INSERT INTO trade_items (trade_id, item_type, item_id, quantity, direction) VALUES
-(1, 'item', 1, 1, 'give'),  -- player1给予医疗包 x1
+(1, 'item', 1, 10, 'give'),  -- player1给予医疗资源 x10
 (1, 'weapon', 1, 1, 'give'),  -- player1给予制式手枪 x1
 (1, 'material', 5, 5, 'take');  -- player1索取食物 x5kg
 

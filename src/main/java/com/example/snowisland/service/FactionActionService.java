@@ -40,6 +40,7 @@ public class FactionActionService {
     @Autowired private LocationRepository locationRepository;
     @Autowired private LocationFacilityRepository facilityRepository;
     @Autowired private LocationNpcRepository npcRepository;
+    @Autowired private NpcFavorRepository npcFavorRepository;
     @Autowired private PlayerActionRepository playerActionRepository;
     @Autowired private ArkService arkService;
     @Autowired private ShelterService shelterService;
@@ -173,6 +174,13 @@ public class FactionActionService {
         }
 
         String autoResult = buildAutoResult(actionType, payload, player, gameDay);
+        if ("assign_personnel".equals(actionType) && payload != null
+                && "npc".equals(str(payload.get("targetKind")))) {
+            autoResult = autoResult + applyNpcAssignPersonnelAuto(payload, player);
+            if (autoResult.contains("已全部自动执行")) {
+                action.setStatus(FactionAction.ActionStatus.feedbacked);
+            }
+        }
         action.setResult(autoResult);
 
         factionActionRepository.save(action);
@@ -200,6 +208,10 @@ public class FactionActionService {
         switch (actionType) {
             case "assign_personnel": {
                 if (toInt(payload.get("targetId")) == null) return "请选择目标";
+                if ("npc".equals(str(payload.get("targetKind")))) {
+                    String npcErr = validateNpcAssignPersonnelTarget(toInt(payload.get("targetId")));
+                    if (npcErr != null) return npcErr;
+                }
                 List<Map<String, Object>> assigned = parseAssignedActions(payload);
                 if (assigned.isEmpty()) return "请至少指定一项对方须提交的自由行动";
                 if (assigned.size() > 2) return "最多指定两项自由行动";
@@ -316,12 +328,17 @@ public class FactionActionService {
         Integer selfId = player.getId();
         switch (actionType) {
             case "assign_personnel": {
+                boolean npcTarget = "npc".equals(str(payload.get("targetKind")));
                 String target = resolveActorName(toInt(payload.get("targetId")), str(payload.get("targetKind")));
                 List<Map<String, Object>> assignedList = parseAssignedActions(payload);
                 String note = str(payload.get("note"));
                 StringBuilder sb = new StringBuilder();
                 sb.append("✓ 已提交【安排人员】\n\n");
-                sb.append("目标：").append(target).append("\n");
+                if (npcTarget) {
+                    sb.append("目标：NPC·").append(target).append("\n");
+                } else {
+                    sb.append("目标：").append(target).append("\n");
+                }
                 sb.append("须提交的自由行动（共").append(assignedList.size()).append("项）：\n");
                 int idx = 1;
                 for (Map<String, Object> item : assignedList) {
@@ -329,7 +346,9 @@ public class FactionActionService {
                     sb.append("\n");
                 }
                 if (note != null && !note.trim().isEmpty()) sb.append("附加说明：").append(note.trim()).append("\n");
-                sb.append("\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。");
+                if (!npcTarget) {
+                    sb.append("\n对方须提交与上述一致的行动，可拒绝（可作为审判理由）。等待主持人裁定。");
+                }
                 return sb.toString();
             }
             case "assign_guard": {
@@ -514,6 +533,153 @@ public class FactionActionService {
                 );
             }
         }
+    }
+
+    /**
+     * NPC「安排人员」自动结算：判定配合与否，可执行的移动当场落地。
+     * 副作用与文案均在 submitAction 的同一事务内完成。
+     * 配合阈值：喜好 favor > -60；厌恶 favor >= 60；忽视/未知 favor >= 0。
+     */
+    private String applyNpcAssignPersonnelAuto(Map<String, Object> payload, Player player) {
+        StringBuilder block = new StringBuilder();
+        block.append("\n\n【自动结算】\n");
+
+        Integer npcId = toInt(payload.get("targetId"));
+        Optional<LocationNpc> npcOpt = npcId != null ? npcRepository.findById(npcId) : Optional.empty();
+        if (!npcOpt.isPresent()) {
+            block.append("结论：无法执行（NPC不存在）\n");
+            block.append("该NPC当前无法执行安排。主持人可复核改判。");
+            return block.toString();
+        }
+
+        LocationNpc npc = npcOpt.get();
+        LocationNpc.Attitude attitude = npc.getAttitudeRuler() != null
+                ? npc.getAttitudeRuler() : LocationNpc.Attitude.忽视;
+        int favor = 0;
+        if (player.getId() != null) {
+            Optional<NpcFavor> favorOpt = npcFavorRepository.findByNpcIdAndPlayerId(npc.getId(), player.getId());
+            if (favorOpt.isPresent() && favorOpt.get().getFavorValue() != null) {
+                favor = favorOpt.get().getFavorValue();
+            }
+        }
+
+        block.append("态度：").append(attitude.name())
+                .append("｜好感：").append(favor)
+                .append("（").append(npcFavorTierDisplayName(favor)).append("）\n");
+
+        String blocked = npcBlockedByStatusMessage(npc.getStatus());
+        if (blocked != null) {
+            block.append("结论：").append(blocked).append("\n");
+            block.append("该NPC当前无法执行安排。主持人可复核改判。");
+            return block.toString();
+        }
+
+        if (!npcCompliesWithRulerOrder(attitude, favor)) {
+            block.append("结论：NPC拒绝执行（")
+                    .append(npcComplianceThresholdHint(attitude))
+                    .append("，可通过提升好感或给予利益争取）。主持人可复核改判。");
+            return block.toString();
+        }
+
+        block.append("结论：NPC同意执行\n");
+        boolean anyAwaitDm = false;
+        List<Map<String, Object>> assigned = parseAssignedActions(payload);
+        for (Map<String, Object> item : assigned) {
+            String actionKey = str(item.get("action"));
+            Integer destId = toInt(item.get("targetLocationId"));
+            if ("go_location".equals(actionKey) && destId != null) {
+                if (!locationRepository.findById(destId).isPresent()) {
+                    block.append("无法执行（目的地不存在）\n");
+                    anyAwaitDm = true;
+                    continue;
+                }
+                Integer oldId = npc.getLocationId();
+                String oldName = resolveLocationName(oldId);
+                String newName = resolveLocationName(destId);
+                if (destId.equals(oldId)) {
+                    block.append("已自动执行：NPC已在「").append(newName).append("」，无需移动\n");
+                } else {
+                    npc.setLocationId(destId);
+                    npcRepository.save(npc);
+                    block.append("已自动执行：NPC已从「").append(oldName)
+                            .append("」移动至「").append(newName).append("」\n");
+                }
+            } else {
+                block.append("已同意执行「").append(labelPlayerActionType(actionKey))
+                        .append("」，具体结果待主持人结算\n");
+                anyAwaitDm = true;
+            }
+        }
+        if (anyAwaitDm) {
+            block.append("部分自动执行，其余待主持人裁定");
+        } else {
+            block.append("已全部自动执行");
+        }
+        return block.toString();
+    }
+
+    /**
+     * 喜好：favor > -60；厌恶：favor >= 60；忽视及未知态度：favor >= 0（缺好感行按 0，默认配合）。
+     */
+    private boolean npcCompliesWithRulerOrder(LocationNpc.Attitude attitude, int favor) {
+        if (attitude == LocationNpc.Attitude.喜好) {
+            return favor > -60;
+        }
+        if (attitude == LocationNpc.Attitude.厌恶) {
+            return favor >= 60;
+        }
+        return favor >= 0;
+    }
+
+    private String npcComplianceThresholdHint(LocationNpc.Attitude attitude) {
+        if (attitude == LocationNpc.Attitude.喜好) {
+            return "喜好态度需好感大于-60";
+        }
+        if (attitude == LocationNpc.Attitude.厌恶) {
+            return "厌恶态度需好感不低于60";
+        }
+        return "忽视态度需好感不低于0";
+    }
+
+    /** 死亡/失踪/离开/被捕不可被安排。返回用户可见原因，可安排则 null。 */
+    private String npcBlockedByStatusMessage(String status) {
+        if (status == null) {
+            return null;
+        }
+        if (status.contains("死亡")) {
+            return "无法执行（NPC已死亡）";
+        }
+        if (status.contains("失踪")) {
+            return "无法执行（NPC已失踪）";
+        }
+        if (status.contains("离开")) {
+            return "无法执行（NPC已离开）";
+        }
+        if (status.contains("被捕")) {
+            return "无法执行（NPC已被捕）";
+        }
+        return null;
+    }
+
+    private String validateNpcAssignPersonnelTarget(Integer npcId) {
+        if (npcId == null) {
+            return "请选择目标";
+        }
+        Optional<LocationNpc> npcOpt = npcRepository.findById(npcId);
+        if (!npcOpt.isPresent()) {
+            return "无法执行（NPC不存在）";
+        }
+        return npcBlockedByStatusMessage(npcOpt.get().getStatus());
+    }
+
+    /** 与 NpcHelpService.getFavorLevelDisplayName 阈值一致，并补上挚友（100）。 */
+    private String npcFavorTierDisplayName(int favorValue) {
+        if (favorValue <= -60) return "敌视";
+        if (favorValue <= -20) return "冷漠";
+        if (favorValue <= 20) return "中立";
+        if (favorValue <= 60) return "友善";
+        if (favorValue < 100) return "亲近";
+        return "挚友";
     }
 
     public List<Map<String, Object>> getPlayerHistory(Integer playerId, Integer gameDay) {

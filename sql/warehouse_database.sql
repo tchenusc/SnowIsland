@@ -154,7 +154,7 @@ INSERT INTO warehouse_dock (item_type, item_id, quantity) VALUES
 ('item', 18, 1),
 ('item', 10, 20),
 ('item', 14, 5),
-('item', 1, 2),
+('item', 1, 20),
 ('item', 11, 3),
 ('item', 12, 1),
 ('weapon', 6, 2),

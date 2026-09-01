@@ -231,7 +231,7 @@ public class NpcDialogueService {
             }
 
             if ("受伤".equals(npcStatus)) {
-                npcReply += "（你可以支付1个医疗包帮助npc恢复健康，请使用快速交互与dm描述行动）";
+                npcReply += "（你可以支付10份医疗资源帮助npc恢复健康，请使用快速交互与dm描述行动）";
             }
 
             int newFavor = Math.max(MIN_FAVOR, Math.min(MAX_FAVOR, currentFavor + favorChange));

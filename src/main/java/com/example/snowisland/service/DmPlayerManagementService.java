@@ -43,7 +43,7 @@ public class DmPlayerManagementService {
     private PlayerItemRepository playerItemRepository;
 
     @Autowired
-    private PlayerNotebookRepository playerNotebookRepository;
+    private PlayerService playerService;
 
     @Autowired
     private GameStateService gameStateService;
@@ -53,6 +53,9 @@ public class DmPlayerManagementService {
 
     @Autowired
     private TradeRestrictionService tradeRestrictionService;
+
+    @Autowired
+    private PlayerMarkerRepository playerMarkerRepository;
 
     public Map<String, Object> listPlayersForDm(String userRole) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -218,6 +221,10 @@ public class DmPlayerManagementService {
             }
             applyPlayerFieldsFromBody(existing, body, false);
 
+            if (body.containsKey("isBound") && !boolVal(body.get("isBound"))) {
+                clearBindingMarkers(existing.getId());
+            }
+
             playerRepository.save(existing);
 
             if (body.containsKey("loginUsername") || body.containsKey("loginPassword")) {
@@ -296,27 +303,12 @@ public class DmPlayerManagementService {
         return result;
     }
 
-    @Transactional
     public Map<String, Object> deletePlayerForDm(Integer playerId, String userRole) {
         Map<String, Object> result = new LinkedHashMap<>();
         if (!isDm(userRole)) {
             return deny(result, "只有DM可以删除玩家");
         }
-        if (!playerRepository.findById(playerId).isPresent()) {
-            return deny(result, "玩家不存在");
-        }
-        try {
-            userRepository.findByPlayerId(playerId).ifPresent(userRepository::delete);
-            playerNotebookRepository.deleteByPlayerId(playerId);
-            playerItemRepository.deleteByPlayerId(playerId);
-            playerRepository.deleteById(playerId);
-            result.put("success", true);
-            result.put("message", "删除成功");
-        } catch (Exception e) {
-            result.put("success", false);
-            result.put("message", "删除失败: " + e.getMessage());
-        }
-        return result;
+        return playerService.deletePlayer(playerId);
     }
 
     private List<Map<String, Object>> buildStartingItemRowsForPlayer(Player player) {
@@ -417,8 +409,57 @@ public class DmPlayerManagementService {
         if (body.containsKey("tradeBanned")) {
             player.setTradeBanned(boolVal(body.get("tradeBanned")));
         }
+        if (body.containsKey("tradeBanExempt")) {
+            player.setTradeBanExempt(boolVal(body.get("tradeBanExempt")));
+        }
         if (body.containsKey("isBound")) {
             player.setIsBound(boolVal(body.get("isBound")));
+        }
+        normalizeInjuryFieldsFromBody(player, body);
+    }
+
+    /**
+     * Align isInjured / isSeverelyInjured / isDead from fields present in this request only.
+     * DM dropdowns send the integer; combat assist may send 1 plus a severe/dead boolean.
+     */
+    private void normalizeInjuryFieldsFromBody(Player player, Map<String, Object> body) {
+        boolean hasInjured = body.containsKey("isInjured");
+        boolean hasSevere = body.containsKey("isSeverelyInjured");
+        boolean hasDead = body.containsKey("isDead");
+        if (!hasInjured && !hasSevere && !hasDead) {
+            return;
+        }
+        int level = 0;
+        if (hasInjured) {
+            Integer val = intOrNull(body.get("isInjured"));
+            if (val != null) {
+                level = Math.max(level, val);
+            }
+        }
+        if (hasSevere && boolVal(body.get("isSeverelyInjured"))) {
+            level = Math.max(level, 2);
+        }
+        if (hasDead && boolVal(body.get("isDead"))) {
+            level = Math.max(level, 3);
+        }
+        player.setIsInjured(level);
+        player.setIsSeverelyInjured(level >= 2);
+        player.setIsDead(level >= 3);
+    }
+
+    private void clearBindingMarkers(Integer playerId) {
+        if (playerId == null) {
+            return;
+        }
+        List<PlayerMarker> toDelete = new ArrayList<>();
+        for (PlayerMarker marker : playerMarkerRepository.findByPlayerIdOrderByIdAsc(playerId)) {
+            String name = marker.getName();
+            if (name != null && name.contains("束缚")) {
+                toDelete.add(marker);
+            }
+        }
+        if (!toDelete.isEmpty()) {
+            playerMarkerRepository.deleteAll(toDelete);
         }
     }
 
@@ -471,6 +512,7 @@ public class DmPlayerManagementService {
         row.put("hiddenJobId", player.getHiddenJobId());
         row.put("hiddenJobName", player.getHiddenJobId() != null ? jobNames.getOrDefault(player.getHiddenJobId(), "—") : null);
         row.put("tradeBanned", Boolean.TRUE.equals(player.getTradeBanned()));
+        row.put("tradeBanExempt", Boolean.TRUE.equals(player.getTradeBanExempt()));
         row.put("isBound", Boolean.TRUE.equals(player.getIsBound()));
         List<String> tradeBanReasons = tradeRestrictionService.reasonsFor(player);
         row.put("tradeBanReasons", tradeBanReasons);

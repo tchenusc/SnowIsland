@@ -41,7 +41,7 @@ const getIconByType = (type) => {
 
 const getRemarkByItem = (itemId) => {
   const remarks = {
-    1: '恢复生命值',
+    1: '基础医疗物资，急救重伤需5份',
     2: '提供光源',
     3: '限制行动',
     4: '发出信号',

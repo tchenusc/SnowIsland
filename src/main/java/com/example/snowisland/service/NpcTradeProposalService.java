@@ -347,7 +347,8 @@ public class NpcTradeProposalService {
             if (out.size() >= NpcTradeProposalMath.MAX_GIVE_LINES) {
                 break;
             }
-            Line one = new Line(line.itemType, line.itemId, 1, line.name);
+            int giftQty = isMedicalResourceGift(line) ? 10 : 1;
+            Line one = new Line(line.itemType, line.itemId, giftQty, line.name);
             out.add(one.toMap());
         }
         return out;
@@ -368,6 +369,16 @@ public class NpcTradeProposalService {
             return null;
         }
         return opt.get();
+    }
+
+    private static boolean isMedicalResourceGift(Line line) {
+        if (line == null || line.itemType != ItemType.item) {
+            return false;
+        }
+        if (line.itemId == 1) {
+            return true;
+        }
+        return "医疗资源".equals(line.name) || "医疗包".equals(line.name);
     }
 
     private List<Line> listSellableSurplus(Integer npcId, int requiredFood, int requiredHeat) {

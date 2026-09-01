@@ -152,7 +152,7 @@ const MATERIAL_MAPS = {
 // 与数据库 item / weapon / ammo / material 表同步（snowisland_5_15.sql）
 export const GAME_ITEM_NAMES = {
   item: {
-    1: '医疗包',
+    1: '医疗资源',
     2: '手电筒',
     3: '手铐',
     4: '哨子',
@@ -703,7 +703,7 @@ export function getTypeTabImage(type) {
 // 统治者避难所：图鉴 / 库存 / 日志
 // -----------------------------
 export const SHELTER_ITEM_CATALOG = {
-  medical_kit: { id: 'medical_kit', name: '医疗包', category: 'prop', description: '急救包，提供基础医疗支援。', imageUrl: imgMedicalKit },
+  medical_kit: { id: 'medical_kit', name: '医疗资源', category: 'prop', description: '基础医疗物资，急救重伤需5份。', imageUrl: imgMedicalKit },
   flashlight: { id: 'flashlight', name: '手电筒', category: 'prop', description: '夜间行动照明工具。', imageUrl: imgFlashlight },
   handcuffs: { id: 'handcuffs', name: '手铐', category: 'prop', description: '约束目标行动的控制道具。', imageUrl: imgHandcuffs },
   whistle: { id: 'whistle', name: '哨子', category: 'prop', description: '可用于报警或快速集合。', imageUrl: imgWhistle },

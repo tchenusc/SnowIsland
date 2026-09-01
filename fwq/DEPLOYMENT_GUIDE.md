@@ -104,7 +104,7 @@ fwq/                                    # 部署配置根目录
 │   ├── application.yml                 # 后端基础配置
 │   ├── application-online.yml          # 后端线上配置
 │   ├── mysql.cnf                       # MySQL 配置
-│   ├── init.sql                        # 数据库初始化脚本入口（已废弃，使用 snowisland_1.sql）
+│   ├── init.sql                        # 数据库初始化脚本入口（已废弃，使用 snowisland.sql）
 │   └── schema.sql                      # 数据库表结构参考
 ├── backend/                            # 后端相关
 │   ├── Dockerfile                      # 后端 Docker 镜像构建文件
@@ -119,7 +119,7 @@ fwq/                                    # 部署配置根目录
 │       ├── 登录页面.png
 │       └── 交互页面背景.png
 ├── docker-compose.yml                  # Docker Compose 编排文件
-├── snowisland_1.sql                    # ❗ 完整数据库初始化脚本（包含表结构和数据）
+├── snowisland.sql                      # ❗ 完整数据库初始化脚本（包含表结构和数据）
 ├── .gitignore                          # Git 忽略文件
 └── DEPLOYMENT_GUIDE.md                 # 本部署文档
 ```
@@ -140,7 +140,7 @@ mkdir -p /opt/snowisland/frontend
 ```
 /opt/snowisland/
 ├── docker-compose.yml
-├── snowisland_1.sql                    # 数据库初始化脚本
+├── snowisland.sql                      # 数据库初始化脚本
 ├── config/
 │   ├── application.yml
 │   ├── application-online.yml
@@ -1028,7 +1028,7 @@ docker compose up -d frontend
 | 文件/目录 | 来源 | 说明 |
 |-----------|------|------|
 | `docker-compose.yml` | `fwq/docker-compose.yml` | Docker Compose 编排文件 |
-| `snowisland_1.sql` | `fwq/snowisland_1.sql` | 数据库初始化脚本（完整） |
+| `snowisland.sql` | `fwq/snowisland.sql` | 数据库初始化脚本（完整） |
 | `config/` | `fwq/config/` | 后端和 MySQL 配置文件 |
 | `backend/Dockerfile` | `fwq/backend/Dockerfile` | 后端构建配置 |
 | `backend/snowisland.jar` | `target/SnowIsland-0.0.1-SNAPSHOT.jar` | 后端可执行 JAR |

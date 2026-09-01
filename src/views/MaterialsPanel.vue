@@ -28,7 +28,7 @@ const typeConfig = {
 // 物品名称映射
 const itemNamesMap = {
   item: {
-    1: '医疗包',
+    1: '医疗资源',
     2: '手电筒',
     3: '手铐',
     4: '哨子',

@@ -27,7 +27,7 @@ const tradeBanBanner = computed(() => {
 
 const allMaterialsMap = {
   item: [
-    { id: 1, name: '医疗包', unit: '个', icon: '🏥' },
+    { id: 1, name: '医疗资源', unit: '份', icon: '🏥' },
     { id: 2, name: '手电筒', unit: '个', icon: '🔦' },
     { id: 3, name: '手铐', unit: '个', icon: '⛓️' },
     { id: 4, name: '哨子', unit: '个', icon: '📢' },

@@ -10,9 +10,9 @@ UPDATE `npc_trade_config`
 SET `quantity` = 2, `min_favor` = 20
 WHERE `id` = 138 AND `config_type` = 'supply';
 
--- NPC2: medical packs cost 2; metal supply 50→12 and favor>=40
+-- NPC2: medical resources cost 20; metal supply 50→12 and favor>=40
 UPDATE `npc_trade_config`
-SET `quantity` = 2
+SET `quantity` = 20
 WHERE `id` = 139 AND `config_type` = 'demand';
 
 UPDATE `npc_trade_config`

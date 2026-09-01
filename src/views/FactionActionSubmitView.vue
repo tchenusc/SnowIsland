@@ -84,11 +84,27 @@ const governedIds = computed(() => new Set(context.value?.governedLocationIds ||
 const unlimitedActions = computed(() => !!context.value?.unlimitedActions)
 const hasSubmittedToday = computed(() => !!context.value?.hasSubmittedToday)
 
+function npcUnavailableForAssign(npc) {
+  const status = npc && npc.status != null ? String(npc.status) : ''
+  return ['死亡', '失踪', '离开', '被捕'].some((marker) => status.includes(marker))
+}
+
 const npcOptions = computed(() => {
   const out = []
   for (const loc of locations.value || []) {
     for (const n of loc.npcs || []) {
-      out.push({ value: `npc:${n.id}`, id: n.id, kind: 'npc', label: `${n.name}（${n.job}）@ ${loc.name}` })
+      if (npcUnavailableForAssign(n)) continue
+      const attitude = n.attitudeRuler
+      const attitudeHint = (attitude === '喜好' || attitude === '厌恶' || attitude === '忽视')
+        ? `｜${attitude}统治者`
+        : ''
+      out.push({
+        value: `npc:${n.id}`,
+        id: n.id,
+        kind: 'npc',
+        attitudeRuler: attitude || null,
+        label: `${n.name}（${n.job}）@ ${loc.name}${attitudeHint}`,
+      })
     }
   }
   return out
@@ -766,7 +782,8 @@ onMounted(async () => {
 
               <!-- 安排人员 -->
               <template v-if="selectedType === 'assign_personnel'">
-                <p class="text-amber-300/90 text-xs">对方须提交与你安排一致的一项或两项白天自由行动。全体统治者共享「安排人员」目标名额（同一玩家/NPC 当日仅可被安排一次）。</p>
+                <p v-if="!assignPersonnelNpcWarning" class="text-amber-300/90 text-xs">对方须提交与你安排一致的一项或两项白天自由行动。全体统治者共享「安排人员」目标名额（同一玩家/NPC 当日仅可被安排一次）。</p>
+                <p v-else class="text-amber-300/90 text-xs">NPC不会提交行动。系统按其对统治者的态度与你好感自动判定是否配合：忽视且好感≥0默认配合，负好感则拒绝；喜好需好感&gt;-60；厌恶需好感≥60。前往地点可自动落地，其余待主持人裁定。全体统治者共享「安排人员」目标名额（同一NPC当日仅可被安排一次）。</p>
                 <div>
                   <label class="block text-gray-500 text-xs mb-2 ml-0.5">目标玩家/NPC</label>
                   <select v-model="forms.assign_personnel.targetId" :class="selectClass">
@@ -777,7 +794,7 @@ onMounted(async () => {
                     v-if="assignPersonnelNpcWarning"
                     class="text-amber-300/90 text-xs mt-2 leading-relaxed"
                   >
-                    NPC 通常需要物资或利益才会配合；若不给予好处，对方很可能拒绝执行安排。
+                    NPC 是否配合由系统按其对统治者的态度与你好感自动判定（态度见选项标注）。拒绝时可通过提升好感或给予利益争取，主持人可复核。
                   </p>
                 </div>
                 <div>
